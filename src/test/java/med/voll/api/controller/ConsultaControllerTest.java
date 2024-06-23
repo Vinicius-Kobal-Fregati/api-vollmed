@@ -1,8 +1,6 @@
 package med.voll.api.controller;
 
-import med.voll.api.domain.consulta.AgendamentoDeConsultas;
-import med.voll.api.domain.consulta.DadosAgendamentoConsulta;
-import med.voll.api.domain.consulta.DadosDetalhamentoConsulta;
+import med.voll.api.domain.consulta.*;
 import med.voll.api.domain.medico.Especialidade;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +20,7 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
@@ -38,6 +37,9 @@ class ConsultaControllerTest {
     @Autowired
     private JacksonTester<DadosDetalhamentoConsulta> dadosDetalhamentoConsultaJson;
 
+    @Autowired
+    private JacksonTester<DadosCancelamentoConsulta> dadosCancelamentoConsultaJson;
+
     @MockBean // A gente faz um mock quando precisar usar ele, não acessando o banco de verdade
     private AgendamentoDeConsultas agendamentoDeConsultas;
 
@@ -52,7 +54,7 @@ class ConsultaControllerTest {
     }
 
     @Test
-    @DisplayName("Deveria retornar status 4200 quando informações estão válidas")
+    @DisplayName("Deveria retornar status 200 quando informações estão válidas")
     @WithMockUser // é possível testar controllers sem se autenticar
     void agendarCenario2() throws Exception {
         var data = LocalDateTime.now().plusHours(1);
@@ -74,5 +76,23 @@ class ConsultaControllerTest {
                 dadosDetalhamento).getJson();
 
         assertEquals(jsonEsperado, response.getContentAsString());
+    }
+
+    @Test
+    @DisplayName("Deveria retornar status 201 quando informações estão válidas")
+    @WithMockUser
+    void cancelarCenario1() throws Exception {
+        var id = 1l;
+        var motivo = MotivoCancelamento.PACIENTE_DESISTIU;
+        var dadosCancelamento = new DadosCancelamentoConsulta(id, motivo);
+
+        var response = mvc.perform(delete("/consultas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(dadosCancelamentoConsultaJson.write(
+                        dadosCancelamento
+                ).getJson()))
+                .andReturn().getResponse();
+
+        assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatus());
     }
 }
